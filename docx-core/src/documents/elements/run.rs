@@ -413,7 +413,7 @@ mod tests {
             r#"{"type":"shading","data":{"shdType":"clear","color":"auto","fill":"FFFFFF"}}"#
         );
     }
-
+  
     #[test]
     fn test_run_footnote_reference() {
         let c = RunChild::FootnoteReference(FootnoteReference::new(1));
