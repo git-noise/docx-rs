@@ -39,6 +39,7 @@ pub enum RunChild {
     DeleteInstrText(Box<DeleteInstrText>),
     // For reader
     InstrTextString(String),
+    Shading(Shading),
     FootnoteReference(FootnoteReference),
 }
 
@@ -125,6 +126,14 @@ impl Serialize for RunChild {
                 t.serialize_field("data", i)?;
                 t.end()
             }
+
+            RunChild::Shading(ref f) => {
+                let mut t = serializer.serialize_struct("Shading", 2)?;
+                t.serialize_field("type", "shading")?;
+                t.serialize_field("data", f)?;
+                t.end()
+            }
+
             RunChild::FootnoteReference(ref f) => {
                 let mut t = serializer.serialize_struct("FootnoteReference", 2)?;
                 t.serialize_field("type", "footnoteReference")?;
@@ -291,6 +300,11 @@ impl Run {
         self
     }
 
+    pub fn shading(mut self, shading: Shading) -> Run {
+        self.run_property = self.run_property.shading(shading);
+        self
+    }
+  
     pub fn add_footnote_reference(mut self, footnote: Footnote) -> Run {
         self.run_property = RunProperty::new().style("FootnoteReference");
         self.children
@@ -320,6 +334,7 @@ impl BuildXML for Run {
                 RunChild::InstrText(c) => b = b.add_child(c),
                 RunChild::DeleteInstrText(c) => b = b.add_child(c),
                 RunChild::InstrTextString(_) => unreachable!(),
+                RunChild::Shading(s) => b = b.add_child(s),
                 RunChild::FootnoteReference(c) => b = b.add_child(c),
             }
         }
@@ -392,6 +407,15 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_run_shading() {
+        let c = RunChild::Shading(Shading::new());
+        assert_eq!(
+            serde_json::to_string(&c).unwrap(),
+            r#"{"type":"shading","data":{"shdType":"clear","color":"auto","fill":"FFFFFF"}}"#
+        );
+    }
+  
     #[test]
     fn test_run_footnote_reference() {
         let c = RunChild::FootnoteReference(FootnoteReference::new(1));
