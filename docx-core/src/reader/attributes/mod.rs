@@ -1,15 +1,18 @@
 mod bool_value;
 mod border;
+mod float_value;
 mod id;
 mod indent;
 mod indent_level;
 pub(crate) mod line_spacing;
 mod name;
 mod val;
+mod vec;
 mod width;
 
 pub use bool_value::*;
 pub use border::*;
+pub(crate) use float_value::*;
 pub use id::*;
 pub use indent::*;
 pub use indent_level::*;

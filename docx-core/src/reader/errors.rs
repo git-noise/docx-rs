@@ -24,4 +24,6 @@ pub enum ReaderError {
     HeaderOrFooterRelsNotFoundError,
     #[error("Unknown error")]
     Unknown,
+    #[error("Failed to parse using quick-xml: {0}")]
+    QuickXMLError(String),
 }

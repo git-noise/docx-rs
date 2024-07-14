@@ -1,13 +1,17 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::documents::BuildXML;
+use crate::reader::deserialize_bool;
 use crate::xml_builder::*;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename = "commentEx", rename_all(serialize = "camelCase"))]
 pub struct CommentExtended {
+    #[serde(rename(deserialize = "@paraId", serialize = "paragraphId"))]
     pub paragraph_id: String,
+    #[serde(rename(deserialize = "@done"), deserialize_with = "deserialize_bool")]
     pub done: bool,
+    #[serde(rename(deserialize = "@paraIdParent"))]
     pub parent_paragraph_id: Option<String>,
 }
 

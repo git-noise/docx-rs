@@ -1,89 +1,71 @@
-use std::io::Read;
-use std::str::FromStr;
+#[cfg(test)]
+mod tests {
+    use crate::Div;
+    use quick_xml::de::from_str;
 
-use xml::attribute::OwnedAttribute;
-use xml::reader::{EventReader, XmlEvent};
+    #[test]
+    fn test_deserialize_div_no_divschild() {
+        let xml_data = r#"
+        <w:div w:id="1" w:leftMargin="200" w:rightMargin="200" w:topMargin="100" w:bottomMargin="100" />
+          "#;
+        let expected = Div {
+            id: "1".to_string(),
+            margin_left: 200,
+            margin_right: 200,
+            margin_top: 100,
+            margin_bottom: 100,
+            divs_child: Default::default(),
+        };
+        let result: Result<Div, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), expected);
+    }
 
-use super::*;
+    #[test]
+    fn test_deserialize_div_nested_divschild() {
+        let xml_data = r#"
+        <w:div w:id="1" w:leftMargin="200" w:rightMargin="200" w:topMargin="100" w:bottomMargin="100">
+            <w:divsChild>
+            <w:div w:id="2" w:leftMargin="50" w:rightMargin="50" w:topMargin="50" w:bottomMargin="50" />
+            </w:divsChild>
+        </w:div>
+        "#;
+        let expected = Div {
+            id: "1".to_string(),
+            margin_left: 200,
+            margin_right: 200,
+            margin_top: 100,
+            margin_bottom: 100,
+            divs_child: vec![Div {
+                id: "2".to_string(),
+                margin_left: 50,
+                margin_right: 50,
+                margin_top: 50,
+                margin_bottom: 50,
+                divs_child: Default::default(),
+            }],
+        };
 
-impl ElementReader for Div {
-    fn read<R: Read>(
-        r: &mut EventReader<R>,
-        attrs: &[OwnedAttribute],
-    ) -> Result<Self, ReaderError> {
-        let id = read_id(attrs).unwrap_or_default();
-        let mut div = Div::new(id);
-        loop {
-            let e = r.next();
-            match e {
-                Ok(XmlEvent::StartElement {
-                    attributes, name, ..
-                }) => {
-                    let e = XMLElement::from_str(&name.local_name).unwrap();
-                    match e {
-                        XMLElement::MarginLeft => {
-                            if let Some(val) = read_val(&attributes) {
-                                if let Ok(val) = f32::from_str(&val) {
-                                    div = div.margin_left(val as usize);
-                                }
-                            }
-                        }
-                        XMLElement::MarginRight => {
-                            if let Some(val) = read_val(&attributes) {
-                                if let Ok(val) = f32::from_str(&val) {
-                                    div = div.margin_right(val as usize);
-                                }
-                            }
-                        }
-                        XMLElement::MarginTop => {
-                            if let Some(val) = read_val(&attributes) {
-                                if let Ok(val) = f32::from_str(&val) {
-                                    div = div.margin_top(val as usize);
-                                }
-                            }
-                        }
-                        XMLElement::MarginBottom => {
-                            if let Some(val) = read_val(&attributes) {
-                                if let Ok(val) = f32::from_str(&val) {
-                                    div = div.margin_bottom(val as usize);
-                                }
-                            }
-                        }
-                        XMLElement::DivsChild => loop {
-                            let e = r.next();
-                            match e {
-                                Ok(XmlEvent::StartElement {
-                                    attributes, name, ..
-                                }) => {
-                                    let e = XMLElement::from_str(&name.local_name).unwrap();
-                                    if let XMLElement::Div = e {
-                                        if let Ok(c) = Div::read(r, &attributes) {
-                                            div = div.add_child(c)
-                                        }
-                                    }
-                                }
-                                Ok(XmlEvent::EndElement { name, .. }) => {
-                                    let e = XMLElement::from_str(&name.local_name).unwrap();
-                                    if let XMLElement::DivsChild = e {
-                                        break;
-                                    }
-                                }
-                                Err(_) => return Err(ReaderError::XMLReadError),
-                                _ => {}
-                            }
-                        },
-                        _ => {}
-                    }
-                }
-                Ok(XmlEvent::EndElement { name, .. }) => {
-                    let e = XMLElement::from_str(&name.local_name).unwrap();
-                    if let XMLElement::Div = e {
-                        return Ok(div);
-                    }
-                }
-                Err(_) => return Err(ReaderError::XMLReadError),
-                _ => {}
-            }
-        }
+        let result: Result<Div, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_deserialize_div_invalid_attribute() {
+        let xml_data = r#"
+            <w:div w:id="1" w:leftMargin="200" w:non_existing="200" w:topMargin="100" w:bottomMargin="100"/>
+          "#;
+        let result: Result<Div, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_div_missing_attribute() {
+        let xml_data = r#"
+        <w:div w:leftMargin="200" w:rightMargin="200" w:topMargin="100" w:bottomMargin="100"/>
+          "#;
+        let result: Result<Div, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_err());
     }
 }

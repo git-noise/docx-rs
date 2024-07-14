@@ -1,25 +1,62 @@
-use std::io::Read;
+#[cfg(test)]
+mod tests {
+    use crate::CommentExtended;
+    use quick_xml::de::from_str;
 
-use xml::attribute::OwnedAttribute;
-use xml::reader::EventReader;
-
-use super::*;
-
-impl ElementReader for CommentExtended {
-    fn read<R: Read>(
-        _r: &mut EventReader<R>,
-        attrs: &[OwnedAttribute],
-    ) -> Result<Self, ReaderError> {
-        let para_id = read(attrs, "paraId").expect("should comment id exists.");
-        let mut comment_extended = CommentExtended::new(para_id);
-        if let Some(done) = read(attrs, "done") {
-            if !is_false(&done) {
-                comment_extended = comment_extended.done();
-            }
+    #[test]
+    fn test_deserialize_comment_extended_valid() {
+        let xml_data = r#"
+              <commentEx paraId="123" done="true" />
+          "#;
+        let expected = CommentExtended {
+            parent_paragraph_id: None,
+            paragraph_id: "123".to_string(),
+            done: true,
         };
-        if let Some(parent_id) = read(attrs, "paraIdParent") {
-            comment_extended = comment_extended.parent_paragraph_id(parent_id);
-        }
-        Ok(comment_extended)
+        let result: Result<CommentExtended, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_deserialize_comment_extended_valid_with_parent_id() {
+        let xml_data = r#"
+              <commentEx paraId="123" done="true" paraIdParent="5698" />
+          "#;
+        let expected = CommentExtended {
+            parent_paragraph_id: Some("5698".to_string()),
+            paragraph_id: "123".to_string(),
+            done: true,
+        };
+        let result: Result<CommentExtended, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_deserialize_comment_extended_invalid_attribute() {
+        let xml_data = r#"
+              <commentEx paragraphId="123" done="true" />
+          "#;
+        let result: Result<CommentExtended, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_comment_extended_missing_attribute() {
+        let xml_data = r#"
+              <commentEx done="true" />
+          "#;
+        let result: Result<CommentExtended, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_comment_extended_incorrect_boolean() {
+        let xml_data = r#"
+              <commentEx paraId="123" done="not_a_boolean" />
+          "#;
+        let result: Result<CommentExtended, quick_xml::DeError> = from_str(xml_data);
+        assert!(result.is_err());
     }
 }

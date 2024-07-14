@@ -1,15 +1,17 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::*;
 use crate::documents::BuildXML;
-use crate::xml_builder::*;
+use crate::{gen_deserialize_children_list, xml_builder::*};
 
 // i.e.    <w15:commentEx w15:paraId="00000001" w15:paraIdParent="57D1BD7C" w15:done="0"/>
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename(serialize = "commentsExtended", deserialize = "commentsEx"))]
 pub struct CommentsExtended {
+    #[serde(default, rename(deserialize = "$value"))]
     pub children: Vec<CommentExtended>,
 }
+gen_deserialize_children_list!(CommentExtended, "commentEx");
 
 impl CommentsExtended {
     pub fn new() -> CommentsExtended {
